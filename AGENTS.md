@@ -21,15 +21,24 @@ Markdown only, no preamble.
 - Image: one block.
 Written per chunk, so an abort leaves the finished chunks on disk.
 
-## Model swap (read before running)
+## Model swap (how it is meant to be called)
 
 The script stops EVERY running llama-server (ports 8081-8084) via keepalive,
 boots the fast-mm server on :8084 (Unsloth-3.8-27B-fastmm, 64k ctx, mmproj in
 VRAM), does the work, then restores whatever was running before. Only one
 server runs at a time: text + mm together OOM the box.
 
-So it will kill and later restart whatever model you had up. Do not run it
-while the user is mid-task on the text model. `--probe` shows what is running.
+Call it as ONE blocking tool call (bash). The swap, the vision work, and the
+restore all happen inside that single call. The agent itself runs on the text
+model (:8082), which the script kills and later restarts; the harness is
+blocked on the tool call the whole time, so it never needs :8082 in the
+middle. By the time the call returns, the text model is back and the agent
+continues normally.
+
+So do NOT deliberate about timeouts (let the call run to completion) and do
+NOT worry about the agent's own model being stopped: it is designed to bring
+the agent back after the vision section is done. `--probe` shows what is
+running before/after.
 
 ## Sizing / timeouts
 
