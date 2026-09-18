@@ -43,13 +43,20 @@ running before/after.
 ## Sizing / timeouts
 
 - PDFs are processed 15 pages per call (CHUNK_PAGES=15), rendered at 140 DPI,
-  capped at 12000 output tokens per chunk.
-- Big PDFs are slow: 420 pages = 28 chunks, each a fresh GPU inference.
-  Give the bash call a 7200s timeout.
-- A chunk that overflows context is auto-halved down to a single page; no
-  action needed.
+  capped at 12000 output tokens per chunk. chunks = ceil(pages / 15).
+- Each chunk is one fresh GPU inference, so total time is roughly linear in
+  chunk count.
+- A chunk that overflows context is auto-halved down to a single page (adds
+  time); no action needed.
 - Fresh context per chunk: no cross-chunk memory. Page numbers come from the
   prompt, so trust the `### Page N` labels.
+
+Timeout planning (size the bash timeout from chunk count, not a guess):
+- Time is roughly linear in chunk count but depends on your GPU and model.
+- Example: a 420-page manual (28 chunks) ran in 10-15 min.
+- Set the bash timeout to a few times the expected duration (7200s is a safe
+  default for multi-hundred-page docs). A timeout abort kills the swap
+  mid-run and leaves the text model down, so err generously.
 
 ## Reading the summary back
 
