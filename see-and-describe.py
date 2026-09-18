@@ -18,6 +18,7 @@ import glob
 import json
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -369,6 +370,10 @@ def main():
             log("error: unsupported type %s (want .pdf or an image)" % ext)
             return 2
 
+    def _abort(signum, frame):
+        raise KeyboardInterrupt("aborted by signal %d" % signum)
+    signal.signal(signal.SIGINT, _abort)
+    signal.signal(signal.SIGTERM, _abort)
     running = discover_running()
     if not running:
         log("no llama servers running")
@@ -391,6 +396,9 @@ def main():
             except Exception as e:
                 results.append((p, None, None, str(e)))
                 log("error on %s: %s" % (os.path.basename(p), e))
+    except KeyboardInterrupt:
+        log("aborted: stopping fast-mm and restoring previous server(s)")
+        return 130
     finally:
         log("stopping fast-mm server")
         keepalive("qwen-mm", "-k")
