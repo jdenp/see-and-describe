@@ -51,12 +51,13 @@ running before/after.
 - Fresh context per chunk: no cross-chunk memory. Page numbers come from the
   prompt, so trust the `### Page N` labels.
 
-Timeout planning (size the bash timeout from chunk count, not a guess):
-- Time is roughly linear in chunk count but depends on your GPU and model.
-- Example: a 420-page manual (28 chunks) ran in 10-15 min.
-- Set the bash timeout to a few times the expected duration (7200s is a safe
-  default for multi-hundred-page docs). A timeout abort kills the swap
-  mid-run and leaves the text model down, so err generously.
+Timeout planning:
+- Do NOT set a bash timeout. Let the call block until it finishes. A timeout
+  abort kills the swap mid-run and leaves the text model down, the worst
+  outcome; the call is designed to run to completion and restore the model.
+- Multi-hundred-page docs are slow on a single GPU (a 400+ page manual is
+  easily an hour or more), so a fixed timeout is more likely to abort a good
+  run than to protect anything.
 
 ## Reading the summary back
 
